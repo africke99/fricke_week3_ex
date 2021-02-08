@@ -76,6 +76,13 @@ These exercises will reiterate what you learned in the "Expanding the data wrang
   1. Summarize the `garden_harvest` data to find the total harvest weight in pounds for each vegetable and day of week (HINT: use the `wday()` function from `lubridate`). Display the results so that the vegetables are rows but the days of the week are columns.
 
 ```{r}
+garden_harvest %>% 
+  select(date, weight, vegetable) %>%
+  group_by(date, vegetable) %>% 
+  summarize(daily_harvest_g = sum(weight)) %>% 
+  mutate(daily_harvest_lb = daily_harvest_g*0.00220462,
+         Day = wday(date, label=TRUE)) %>% 
+  mutate()
 
 ```
 
@@ -231,6 +238,5 @@ This problem uses the data from the Tidy Tuesday competition this week, `kids`. 
 
   21. In this exercise, you are going to try to replicate the graph below, created by Georgios Karamanis. I'm sure you can find the exact code on GitHub somewhere, but **DON'T DO THAT!** You will only be graded for putting an effort into this problem. So, give it a try and see how far you can get without doing too much googling. HINT: use `facet_geo()`. The graphic won't load below since it came from a location on my computer. So, you'll have to reference the original html on the moodle page to see it.
   
-![](kids_data_karamanis.jpeg)
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
