@@ -74,41 +74,100 @@ Before starting your assignment, you need to get yourself set up on GitHub and m
 These exercises will reiterate what you learned in the "Expanding the data wrangling toolkit" tutorial. If you haven't gone through the tutorial yet, you should do that first.
 
   1. Summarize the `garden_harvest` data to find the total harvest weight in pounds for each vegetable and day of week (HINT: use the `wday()` function from `lubridate`). Display the results so that the vegetables are rows but the days of the week are columns.
+  
+**Do I need to get rid of the N/A??**
 
 ```{r}
 garden_harvest %>% 
-  select(date, weight, vegetable) %>%
-  group_by(date, vegetable) %>% 
-  summarize(daily_harvest_g = sum(weight)) %>% 
-  mutate(daily_harvest_lb = daily_harvest_g*0.00220462,
-         Day = wday(date, label=TRUE)) %>% 
-  mutate()
+  mutate(daily_harvest_lb = weight*0.00220462,
+         Day = wday(date, label=TRUE)) %>%
+  
+  group_by(vegetable, Day) %>% 
+  
+  summarize(daily_total = sum(daily_harvest_lb)) %>% 
+  
+  arrange(Day, daily_total, vegetable) %>% 
+  
+  pivot_wider(id_cols = vegetable,
+              names_from = Day,
+              values_from = daily_total)
 
 ```
 
   2. Summarize the `garden_harvest` data to find the total harvest in pound for each vegetable variety and then try adding the plot from the `garden_planting` table. This will not turn out perfectly. What is the problem? How might you fix it?
+  
+**By using inner join, I selected to show only the varieties which also were listed with plots. In doing this I likely dropped a few varieties. I could fix this by using full join????????????????**
 
 ```{r}
-
+total_garden <- 
+  garden_harvest %>% 
+  mutate(daily_harvest_lb = weight*0.00220462) %>%
+  group_by(variety) %>% 
+  summarize(total_lb = sum(daily_harvest_lb)) 
+garden_planting %>% 
+  select(plot, variety) %>% 
+  inner_join(total_garden,
+             by = "variety") %>% 
+  arrange(plot)
 ```
 
   3. I would like to understand how much money I "saved" by gardening, for each vegetable type. Describe how I could use the `garden_harvest` and `garden_spending` datasets, along with data from somewhere like [this](https://products.wholefoodsmarket.com/search?sort=relevance&store=10542) to answer this question. You can answer this in words, referencing various join functions. You don't need R code but could provide some if it's helpful.
 
+First, the columns that I would use would be 
+garden_spending: variety, price_with_tax
+garden_harvest: variety, weight
+wholefoods: pricelb_WF 
+(would be a column of $ / lb of the same variety as garden_harvest)
+
+Next, I would use full_join to join the columns from each dataset, the "by" variable would be variety. If any spaces ended up being NA, I would filter these out before doing calculations. 
+
+I would mutate the garden harvest data to create new variables. First I would mutate and find the sum weight of each variety in lbs. Next, I would make a variable with  price_with_tax divided by total weight per variety. This would be gardenlb_price.
+
+Finally, I would create a new variable -- price_save, by mutating and finding the difference between pricelb_WF and gardenlb_price. This would show how much money was saved for each variety.
+
+
   4. Subset the data to tomatoes. Reorder the tomato varieties from smallest to largest first harvest date. Create a barplot of total harvest in pounds for each variety, in the new order.
 
+**cant figure out why it can't find variety, was working before**
+  filter(vegetable == "tomatoes") %>% 
+  summarize(first_harvest = min(date)) %>%
+    summarize(tot_weight = sum(weight))
+
 ```{r}
+garden_harvest %>%
+  filter(vegetable == "tomatoes") %>% 
+  group_by(variety) %>% 
+  mutate(daily_harvest_lb = weight*0.00220462) %>%
+  summarize(variety, daily_harvest_lb, first_harvest = min(date)) %>% 
+  distinct() %>% 
+  arrange(first_harvest) %>% 
+  ggplot(aes(x = daily_harvest_lb, y = fct_reorder(variety, first_harvest)))+
+  geom_col()
+  
+
+
 
 ```
 
-  5. In the `garden_harvest` data, create two new variables: one that makes the varieties lowercase and another that finds the length of the variety name. Arrange the data by vegetable and length of variety name (smallest to largest), with one row for each vegetable variety. HINT: use `str_to_lower()`, `str_length()`, and `distinct()`.
+  5. In the `garden_harvest` data, create two new variables: one that makes the varieties lowercase and another that finds the length of the variety name. 
+Arrange the data by vegetable and length of variety name (smallest to largest), with one row for each vegetable variety. HINT: use `str_to_lower()`, `str_length()`, and `distinct()`.
   
 ```{r}
+garden_harvest %>% 
+  group_by(vegetable) %>% 
+  summarize(lowercase_name = str_to_lower(variety),
+         name_length = str_length(variety)) %>% 
+  distinct() %>% 
+  arrange(name_length)
 
 ```
-
+ 
   6. In the `garden_harvest` data, find all distinct vegetable varieties that have "er" or "ar" in their name. HINT: `str_detect()` with an "or" statement (use the | for "or") and `distinct()`.
 
 ```{r}
+garden_harvest %>% 
+  distinct(variety) %>% 
+  mutate(er_ar = str_detect(variety, "er|ar"))
 
 ```
 
